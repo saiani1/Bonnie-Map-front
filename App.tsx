@@ -6,6 +6,7 @@ import { PROVIDER_GOOGLE, Marker } from 'react-native-maps';
 import MapView from 'react-native-maps';
 import * as Location from 'expo-location';
 import { FontAwesome } from '@expo/vector-icons';
+import { API_KEY } from '@env';
 
 const App = () => {
   const [location, setLocation] = useState({
@@ -38,19 +39,21 @@ const App = () => {
       <View style={styles.inputWrap}>
         <FontAwesome name="search" size={20} color="black" style={styles.icon} />
         <GooglePlacesAutocomplete
+          minLength={2}
           placeholder="검색할 장소를 입력해주세요 :)"
-          onPress={(d) => {
-            console.log(d);
+          onPress={(data, details = null) => {
+            console.log(data, details);
           }}
+          keepResultsAfterBlur={true}
+          enablePoweredByContainer={false}
           onNotFound={() => console.log('no results')}
           query={{
-            key: process.env.REACT_NATIVE_APP_GOOGLE_MAP_ID,
+            key: API_KEY,
             language: 'ko',
+            components: 'country:kr',
           }}
           keyboardShouldPersistTaps={'handled'}
           fetchDetails={true}
-          enablePoweredByContainer={false}
-          keepResultsAfterBlur={true}
           styles={styles.googleSearch}
         />
       </View>
@@ -88,6 +91,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: '#eee',
+    padding: 100,
   },
   inputWrap: {
     position: 'absolute',
