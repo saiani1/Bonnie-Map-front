@@ -39,8 +39,8 @@ const App = () => {
         <FontAwesome name="search" size={20} color="black" style={styles.icon} />
         <GooglePlacesAutocomplete
           placeholder="검색할 장소를 입력해주세요 :)"
-          onPress={(data, details) => {
-            console.log(data, details);
+          onPress={(d) => {
+            console.log(d);
           }}
           onNotFound={() => console.log('no results')}
           query={{
