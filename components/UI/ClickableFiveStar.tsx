@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
-import { StyleSheet, TouchableHighlight, View } from 'react-native';
+import { StyleSheet, TouchableOpacity, View } from 'react-native';
 import { AntDesign } from '@expo/vector-icons';
 
 const STAR_ARR = [1, 2, 3, 4, 5];
 
-const StarWrap = () => {
+const ClickFiveStar = () => {
   const [clickStar, setClickStar] = useState(0);
   const handleClickStar = (item: number) => {
     setClickStar(item);
@@ -13,14 +13,14 @@ const StarWrap = () => {
   return (
     <View style={styles.starWrap}>
       {STAR_ARR.map((item) => (
-        <TouchableHighlight key={item} onPress={() => handleClickStar(item)}>
+        <TouchableOpacity key={item} activeOpacity={0.6} onPress={() => handleClickStar(item)}>
           <AntDesign
             name={clickStar >= item ? 'star' : 'staro'}
-            size={24}
+            size={16}
             color="black"
             style={clickStar >= item ? styles.star : styles.staro}
           />
-        </TouchableHighlight>
+        </TouchableOpacity>
       ))}
     </View>
   );
@@ -38,4 +38,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default StarWrap;
+export default ClickFiveStar;

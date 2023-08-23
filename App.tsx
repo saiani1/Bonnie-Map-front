@@ -1,11 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, View, Dimensions, TouchableHighlight, Text } from 'react-native';
-import {
-  GooglePlaceData,
-  GooglePlaceDetail,
-  GooglePlacesAutocomplete,
-} from 'react-native-google-places-autocomplete';
+import { StyleSheet, View, Dimensions } from 'react-native';
+import { GooglePlaceData, GooglePlacesAutocomplete } from 'react-native-google-places-autocomplete';
 import { PROVIDER_GOOGLE, PoiClickEvent } from 'react-native-maps';
 import MapView from 'react-native-maps';
 import * as Location from 'expo-location';
@@ -22,9 +18,12 @@ const App = () => {
   const [locationInfo, setLocationInfo] = useState({
     title: '',
     address: '',
+    isOpen: '',
+    openingHour: [],
     photo: '',
   });
   const [permission, setPermission] = useState(false);
+  const [showModal, setShowModal] = useState(false);
 
   const locationPermission = async () => {
     const { granted } = await Location.requestForegroundPermissionsAsync();
@@ -40,59 +39,79 @@ const App = () => {
     }
   };
 
-  const handleClickMap = (e: PoiClickEvent) => {
+  const handleClickMap = async (e: PoiClickEvent) => {
     setLocation(e.nativeEvent.coordinate);
     const placeId = e.nativeEvent.placeId;
-    axios
-      .get('https://maps.googleapis.com/maps/api/place/details/json', {
-        params: {
-          place_id: placeId,
-          key: API_KEY,
-        },
-      })
-      .then((res) => {
-        const resData = res.data.result;
-        axios
-          .get('https://maps.googleapis.com/maps/api/place/photo', {
-            params: {
-              photoreference: resData.photos[0].photo_reference,
-              maxwidth: 400,
-              key: API_KEY,
-            },
-            responseType: 'arraybuffer',
-          })
-          .then((res) =>
-            setLocationInfo({
-              title: resData.name,
-              address: resData.formatted_address,
-              photo: res.request.responseURL,
-            }),
-          );
-      });
+    const detailRes = await axios.get('https://maps.googleapis.com/maps/api/place/details/json', {
+      params: {
+        place_id: placeId,
+        key: API_KEY,
+      },
+    });
+
+    const detailData = detailRes.data.result;
+    const weekdayHour =
+      detailData.current_opening_hours && detailData.current_opening_hours.weekday_text
+        ? detailData.current_opening_hours.weekday_text
+        : [];
+    let isOpenTxt = '알 수 없음';
+    if (detailData.current_opening_hours && detailData.current_opening_hours.open_now)
+      isOpenTxt = detailData.current_opening_hours.open_now === true ? '영업중' : '영업종료';
+
+    const photoRes = await axios.get('https://maps.googleapis.com/maps/api/place/photo', {
+      params: {
+        photoreference: detailData.photos[0].photo_reference,
+        maxwidth: 400,
+        key: API_KEY,
+      },
+      responseType: 'arraybuffer',
+    });
+
+    setLocationInfo({
+      ...locationInfo,
+      title: detailData.name,
+      address: detailData.formatted_address,
+      isOpen: isOpenTxt,
+      openingHour: weekdayHour,
+      photo: photoRes.request.responseURL,
+    });
+
+    setShowModal(true);
   };
 
-  const handleClickLocation = (data: GooglePlaceData, details: any) => {
+  const handleClickLocation = async (data: GooglePlaceData, details: any) => {
     if (details) {
       setLocation({
         latitude: details.geometry.location.lat,
         longitude: details.geometry.location.lng,
       });
-      axios
-        .get('https://maps.googleapis.com/maps/api/place/photo', {
-          params: {
-            photoreference: details.photos[0].photo_reference,
-            maxwidth: 400,
-            key: API_KEY,
-          },
-          responseType: 'arraybuffer',
-        })
-        .then((res) =>
-          setLocationInfo({
-            title: details.name,
-            address: details.formatted_address,
-            photo: res.request.responseURL,
-          }),
-        );
+      const res = await axios.get('https://maps.googleapis.com/maps/api/place/photo', {
+        params: {
+          photoreference: details.photos[0].photo_reference,
+          maxwidth: 400,
+          key: API_KEY,
+        },
+        responseType: 'arraybuffer',
+      });
+
+      const weekdayHour =
+        details.current_opening_hours && details.current_opening_hours.weekday_text
+          ? details.current_opening_hours.weekday_text
+          : [];
+
+      let isOpenTxt = '알 수 없음';
+
+      if (details.current_opening_hours && details.current_opening_hours.open_now)
+        isOpenTxt = details.current_opening_hours.open_now === true ? '영업중' : '영업종료';
+
+      setLocationInfo({
+        title: details.name,
+        address: details.formatted_address,
+        isOpen: isOpenTxt,
+        openingHour: weekdayHour,
+        photo: res.request.responseURL,
+      });
+      setShowModal(true);
     }
   };
 
@@ -103,7 +122,9 @@ const App = () => {
   return (
     <View style={styles.container}>
       <StatusBar style="auto" />
-      {locationInfo.title.length !== 0 && <PlaceModal locationInfo={locationInfo} />}
+      {showModal && (
+        <PlaceModal locationInfo={locationInfo} showModal={showModal} setShowModal={setShowModal} />
+      )}
       <View style={styles.inputWrap}>
         <FontAwesome name="search" size={20} color="black" style={styles.icon} />
         <GooglePlacesAutocomplete
